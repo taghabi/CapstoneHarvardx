@@ -1,2 +1,4 @@
 # CapstoneHarvardx
-Personal capstone project
+Since the start of 2020, the two main Crypto giants Bitcoin and Ethereum have been gaining steady momentum in the Crypto market, and now at the start of 2021, are just beggining to peak and surpass all-time highs. This surge in price and market cap of both Bitcoin and Ethereum is partly due to Crypto whales and commercial investors aggressively buying up high volumes of Bitcoin and Ethereum. Cryptocurrencies are now being more widely accepted and legitimized by governments and financial institutions.
+
+Using R, this project forecasts the rise of Cryptocurrency price movements using an application of time-series analysis. The main library used will be Prophet. Prophet is a very powerful forecasting tool with time-series applications. It was developed by developers at Facebook and is mainly used for business analytics in forecasting sales volumes and price analytics. Prophet is effective for business related forecasts that exhibit seasonality, trends, dips and high levels of variation, as the case with Cryptocurrency.

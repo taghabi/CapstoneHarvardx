@@ -1,0 +1,254 @@
+---
+title: "Cryptocurrency Forecast 2021"
+author: "Tareq Aghabi"
+date: "`r format(Sys.Date())`"
+output: 
+  prettydoc::html_pretty:
+  theme: hpstr
+  highlight: github
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+Since the start of 2020, the two main Crypto giants Bitcoin and Ethereum have been gaining steady momentum in the Crypto market, and now at the start of 2021, are just beggining to peak and surpass all-time highs. This surge in price and market cap of both Bitcoin and Ethereum is partly due to Crypto whales and commercial investors aggressively buying up high volumes of Bitcoin and Ethereum. Cryptocurrencies are now being more widely accepted and legitimized by governments and financial institutions.
+
+Using R, this project forecasts the rise of Cryptocurrency price movements using an application of time-series analysis. The main library used will be Prophet. Prophet is a very powerful forecasting tool with time-series applications. It was developed by developers at Facebook and is mainly used for business analytics in forecasting sales volumes and price analytics. Prophet is effective for business related forecasts that exhibit seasonality, trends, dips and high levels of variation, as the case with Cryptocurrency.
+
+## Data Installation
+This project will install and load four different libraries. Lubridate, for data wrangling. Ggplot2, for data visualization. Tidyverse, for data manipulation. Prophet, for data forecasting.
+```{r pressure, echo=FALSE}
+# Install missing packages if not yet installed.
+if(!require(lubridate)) install.packages("lubridate")
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(prophet)) install.packages("prophet")
+# Load Lubridate for data wrangling
+library(lubridate)
+# Load Ggplot for data visualization
+library(ggplot2)
+# Load Tidyverse for data manipulation
+library(tidyverse)
+# Load Prophet for data forecasting
+library(prophet)
+```
+
+The Bitcoin and Ethereum price datasets were downloaded directly from the Historical Data tab found on finance.yahoo.com and are loaded as csv files.
+```{r load}
+bitcoin <- read.csv("BTC-USD.csv", header = TRUE)
+ethereum <- read.csv("ETH-USD.csv", header = TRUE)
+# Both csv files were retrieved on 01/07/2020, directly from Yahoo finance.
+# Bitcoin and Ethereum will be compared against the US Dollar.
+```
+
+## Preview Datasets
+Bellow is a preview of both the downloaded Bitcoin and Ethereum datasets.
+```{r preview}
+head(bitcoin)
+head(ethereum)
+```
+
+Bellow is a preview of the structure of the Bitcoin dataset. There are 2305 observations and 7 variables.
+```{r structure1}
+str(bitcoin)
+```
+
+Bellow is a preview of the structure of the Ethereum dataset. There are 1981 observations and 7 variables.
+```{r structure2}
+str(ethereum)
+```
+
+## Data Wrangling
+In this time-series forecasting analysis, the main variables we will be using are Date and Closing Price. Later on we will be using all historical data observations to develop a prediction model for Crypto prices in the next 365 days.
+
+To ensure the Prophet function has proper functionality, the Date and Closing price classes need to be corrected for both datasets.
+```{r class}
+# Preview class for Bitcoin Date
+class(bitcoin$Date)
+# Preview class for Bitcoin Close
+class(bitcoin$Close)
+# Preview class for Ethereum Date
+class(ethereum$Date)
+# Preview class for Ethereum Close
+class(ethereum$Close)
+# All classes are in 'character'. 
+```
+
+Update class of Date and Close:
+```{r update}
+# Update Date to class Date.
+bitcoin$Date <- as.Date(bitcoin$Date)
+ethereum$Date <- as.Date(ethereum$Date)
+
+# Update Close to class Numeric.
+bitcoin$Close <- suppressWarnings(as.numeric(as.character(bitcoin$Close)))
+ethereum$Close <- suppressWarnings(as.numeric(as.character(ethereum$Close)))
+```
+
+## Data Visulization
+Now that the data has been wrangled and cleaned, we will plot the charts of both datasets.
+```{r plot1, echo = FALSE}
+# Plot bitcoin
+qplot(Date, Close, data = bitcoin, main = 'Bitcoin closing prices 2014-2021')
+```
+```{r plot2, echo = FALSE}
+# Plot ethereum
+qplot(Date, Close, data = ethereum, main = 'Ethereum closing prices 2015-2021')
+```
+
+The closing prices will be transformed using log transformation to enable easier data manipulation and forecasting later on. 
+```{r log1, echo = FALSE}
+# Log transformation Bitcoin
+ds <- bitcoin$Date
+y <- log(bitcoin$Close)
+df1 <- data.frame(ds, y)
+qplot(ds, y, data = df1, main = 'Bitcoin closing in log scale')
+```
+
+```{r log2, echo = FALSE}
+# Log transformation Ethereum
+ds <- ethereum$Date
+y <- log(ethereum$Close)
+df2 <- data.frame(ds, y)
+qplot(ds, y, data = df2, main = 'Ethereum closing prices log scale')
+```
+
+Note that in Prophet, the naming conventions are as follows: ds for date, and y for closing price.
+
+## Bitcoin Data Forecasting
+```{r forecast1}
+# Calling the Prophet Function to Fit the Bitcoin Model
+ds <- bitcoin$Date
+y <- log(bitcoin$Close)
+model1 <- prophet(df1)
+future_price1 <- make_future_dataframe(model1, periods = 365)
+# View last few values of the future price 1 data frame
+tail(future_price1)
+# We can validate that the predictions are made until January 2022, 1 year from now.
+forecast1 <- predict(model1, future_price1)
+tail(forecast1[c('ds','yhat','yhat_lower','yhat_upper')])
+```
+yhat represents the predicted value, and the upper and lower bounds represent the confidence interval.
+
+## Plot Bitcoin
+```{r plotbitcoin, echo=FALSE}
+plot(model1, forecast1)
+```
+
+The black dots represent the actual data points. The dark blue line represents the predicted close estimate. The light blue area represents the confidence interval, and with more time, the confidence expands wider due to uncertainty.
+
+Interactive plot that provides date, actual and predicted values
+```{r interactiveplot1, echo=FALSE}
+suppressWarnings(dyplot.prophet(model1, forecast1))
+```
+As seen in both plots, the price of Bitcoin begins to surge away from the predicted line at the start of 2021. The new Bitcoin peak reached at the start of 2021 can be calculated using the exponent function to transform back from log scale. On January 5th, the Actual price was33860.35, while the predicted value was 1767.65. A difference of 16183.7.
+
+
+Interactive plot that provides date, actual and predicted values
+```{r components1, echo=FALSE}
+prophet_plot_components(model1, forecast1)
+```
+
+As seen in the first graph, Bitcoin will continue its increasing trend from 2020 into 2022. As seen in the second graph, Bitcoin prices are at usually their highest during the start of the working week, and usually at their lowest towards the end of the working week. Looking at the yearly pattern, closing prices are at their highest at January.
+
+## Ethereum Data Forecasting
+```{r forecast2}
+# Calling the Prophet Function to Fit the Ethereum Model
+ds <- ethereum$Date
+y <- log(ethereum$Close)
+model2 <- prophet(df2)
+future_price2 <- make_future_dataframe(model2, periods = 365)
+# View last few values of the future price 1 data frame
+tail(future_price2)
+# We can validate that the predictions are made until January 2022, 1 year from now.
+forecast2 <- predict(model2, future_price2)
+tail(forecast2[c('ds','yhat','yhat_lower','yhat_upper')])
+```
+yhat represents the predicted value, and the upper and lower bounds represent the confidence interval.
+
+## Plot Ethereum
+```{r plotethereum, echo=FALSE}
+plot(model2, forecast2)
+```
+
+The black dots are the actual data points and the dark blue line is the predicted close estimate. In the case of Ethereum, the light blue confidence interval limits are wider to that of Bitcoin due to higher levels of uncertainty, but the trendline still points to an increasing trend in closing price.
+
+Interactive plot that provides date, actual and predicted values
+```{r interactiveplot2, echo=FALSE}
+dyplot.prophet(model2, forecast2)
+```
+Again with Ethereum, the price begins to sure at the start of 2021. on January 5th, the Actual price was the Actual price was 1096.63, while the predicted value was 544.57. A difference of 522.
+
+```{r components2, echo=FALSE}
+prophet_plot_components(model2, forecast2)
+```
+
+Similar to Bitcoin, the trendline continues its increase from 2020 into the rest of 2022. Historically, Ethereum closing prices peak on Fridays and Wednesdays, and are at their lowest on Mondays. Throughout a Historical year, Ethereum prices Peak at June and are at their lowest around May.
+
+## Bitcoin Results 
+```{r results1}
+prediction1 <- forecast1$yhat[1:2304]
+actual1 <- model1$history$y
+plot(actual1, prediction1)
+abline(lm(prediction1 ~ actual1), col = 'red')
+```
+
+The predicted points fall close to the predicted line with some variability. To study this variability, a linear regression model will be used.
+
+```{r lm1}
+summary(lm(prediction1 ~ actual1))
+```
+R-Squared is 0.9932, so about 99% of this model is explained by variability.
+
+```{r rmse1}
+x1 <- cross_validation(model1, 365, units = "days")
+```
+
+```{r metric1}
+performance_metrics(x1, rolling_window = 0.1)
+```
+With more data points, RMSE increases along with uncertainty. RMSE starts at 0.322 and ends at 2.27
+
+```{r cross1}
+plot_cross_validation_metric(x1, metric = 'rmse', rolling_window = 0.1)
+```
+
+Root mean square error is represented in the grey plots. As shown in the graph, the rolling window line moves along with the RMSE.
+
+## Ethereum Results 
+```{r results2}
+prediction2 <- forecast2$yhat[1:1980]
+actual2 <- model2$history$y
+plot(actual2, prediction2)
+abline(lm(prediction2 ~ actual2), col = 'red')
+```
+The predicted points fall close to the predicted line with some variability. To study this variability, a linear regression model will be used.
+
+```{r lm2}
+summary(lm(prediction2 ~ actual2))
+```
+R-Squared is 0.989, so about 98% of this model is explained by variability
+
+```{r rmse2}
+x2 <- cross_validation(model2, 365, units = "days")
+```
+
+```{r metric2}
+performance_metrics(x2, rolling_window = 0.1)
+```
+With more data points, RMSE increases along with uncertainty. RMSE starts at 0.29 and ends at 0.92
+
+```{r cross2}
+plot_cross_validation_metric(x2, metric = 'rmse', rolling_window = 0.1)
+```
+
+Root mean square error is represented in the grey plots. As shown in the graph, the rolling window line moves along with the RMSE.
+
+
+## Conclusion
+At the start of 2021, the price of Bitcoin and Ethereum began to skyrocket due to heavy market activity from commercial investors. Governments and private financial institutions have injected billions of dollars into the market and have greatly influenced the surge we see today. 
+
+In this project, we used R to forecast Cryptocurrency prices for 365 days using the Prophet function, which which was developed by Facebook developers for business analytics and price forecasting. The models were validated using a linear regression model and root mean square error. The resulting R-Square was 99% and 98% for Bitcoin and Ethereum, respectively. The RMSE starts off close to 0.3 and increases to 2 and 0.9 for Bitcoin and Ethereum, respectively.
+
+A future addition to this forecast would be including a prediction variable representing market activity, the volume of Crypto bought and sold everyday. This would  help better capture the relationship between future closing prices and market activity, and would add another layer of complexity and accuracy to the prediction model.
